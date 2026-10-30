@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#183b32">
+  <meta name="description" content="Простой чат без лишних данных и регистрации по почте">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/img/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+  <title>Тихий чат</title>
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="sidebar" aria-label="Навигация по чатам">
+      <a class="brand" href="/" aria-label="Тихий чат, главная">
+        <span class="brand-mark">т.</span>
+        <span class="brand-name">тихий<span>чат</span></span>
+      </a>
+      <div class="sidebar-section-heading">
+        <span>КОМНАТЫ</span>
+        <span class="room-count" id="room-count">0</span>
+      </div>
+      <div class="room-list" id="room-list" aria-live="polite"></div>
+      <div class="sidebar-footer">
+        <div class="profile" id="profile" hidden>
+          <span class="avatar" id="avatar">?</span>
+          <span class="profile-name" id="profile-name"></span>
+          <button class="quiet-button" id="logout-button" type="button">Выйти</button>
+        </div>
+        <a class="admin-link" href="/admin">Панель администратора <span aria-hidden="true">↗</span></a>
+      </div>
+    </aside>
+
+    <section class="chat-panel" aria-label="Переписка">
+      <header class="chat-header">
+        <div class="room-heading">
+          <span class="eyebrow" id="room-eyebrow">ПРОСТРАНСТВО ДЛЯ РАЗГОВОРА</span>
+          <h1 id="room-title">Выберите комнату</h1>
+          <p id="room-description">Сообщения появятся здесь.</p>
+        </div>
+        <div class="connection-status"><span class="status-dot"></span><span id="connection-label">Не подключено</span></div>
+      </header>
+      <div class="message-list" id="message-list" aria-live="polite" aria-relevant="additions">
+        <div class="empty-state" id="empty-state">
+          <span class="empty-index">01 / 01</span>
+          <h2>Разговор начинается<br>с простого «привет».</h2>
+          <p>Выберите комнату слева или зайдите позже.</p>
+        </div>
+      </div>
+      <form class="composer" id="message-form">
+        <label class="attach-button" for="image-input" title="Прикрепить изображение">Фото</label>
+        <input id="image-input" name="image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+        <div class="composer-fields">
+          <div class="attachment-name" id="attachment-name" hidden></div>
+          <textarea id="message-input" name="content" rows="1" maxlength="4000" placeholder="Напишите сообщение..." aria-label="Текст сообщения" disabled></textarea>
+        </div>
+        <button class="send-button" type="submit" disabled>Отправить <span aria-hidden="true">↗</span></button>
+      </form>
+    </section>
+  </main>
+
+  <dialog class="login-dialog" id="login-dialog">
+    <form class="login-card" id="login-form" method="dialog">
+      <span class="login-kicker">ТИХИЙ ЧАТ / БЕЗ ЛИШНИХ ДАННЫХ</span>
+      <h2>Как вас<br>называть?</h2>
+      <p>Для входа нужен только логин. Электронная почта и номер телефона не требуются.</p>
+      <label for="login-input">Логин</label>
+      <input id="login-input" name="login" autocomplete="username" minlength="2" maxlength="32" pattern="[\-a-zA-Z\u0401\u0451\u0410-\u042F\u0430-\u044F0-9_.]+" required>
+      <small>2–32 символа: латиница или кириллица, цифры, точка, дефис или _</small>
+      <button class="send-button login-submit" type="submit">Войти в чат <span aria-hidden="true">↗</span></button>
+      <p class="form-error" id="login-error" role="alert"></p>
+    </form>
+  </dialog>
+
+  <script src="/js/app.js" defer></script>
+</body>
+</html>

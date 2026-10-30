@@ -1,0 +1,30 @@
+[Unit]
+Description=SimpleChat FastAPI application
+After=network.target
+
+[Service]
+Type=simple
+User=simplechat
+Group=simplechat
+WorkingDirectory=/opt/simplechat
+EnvironmentFile=/opt/simplechat/simplechat.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/simplechat/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=on-failure
+RestartSec=3
+UMask=0027
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadWritePaths=/opt/simplechat/data /opt/simplechat/upload
+
+[Install]
+WantedBy=multi-user.target

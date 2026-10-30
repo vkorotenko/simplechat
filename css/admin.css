@@ -1,0 +1,38 @@
+.admin-page { min-height: 100dvh; background: var(--paper); }
+.admin-topbar { display: flex; justify-content: space-between; align-items: center; min-height: 72px; padding: 12px clamp(20px, 6vw, 88px); background: var(--green); color: #fffefa; }
+.back-link { color: #e2eadf; font-size: 13px; text-decoration: none; }
+.back-link:hover { color: var(--lime); }
+.admin-main { display: grid; grid-template-columns: minmax(230px, .75fr) minmax(340px, 1fr); gap: clamp(36px, 9vw, 140px); width: min(1050px, calc(100% - 48px)); margin: 0 auto; padding: clamp(46px, 8vh, 90px) 0 70px; }
+.admin-intro { align-self: start; padding-top: 8px; }
+.admin-intro h1 { margin: 18px 0 16px; font: 800 clamp(44px, 6vw, 72px)/.93 var(--display); }
+.admin-intro p { max-width: 290px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+.admin-form-wrap { padding: 26px 30px 30px; border-top: 3px solid var(--coral); background: var(--white); }
+.admin-form-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.form-number { color: var(--coral); font-size: 12px; font-weight: 700; }
+.admin-form-heading h2 { margin: 0; font: 700 20px/1.1 var(--display); }
+.room-form { display: grid; }
+.room-form label { margin: 17px 0 7px; font-size: 12px; font-weight: 700; }
+.room-form label span { color: var(--muted); font-weight: 400; }
+.room-form input, .room-form textarea { width: 100%; min-height: 43px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 2px; outline: 0; background: #fbfbf7; color: var(--ink); }
+.room-form textarea { min-height: 80px; resize: vertical; }
+.room-form input:focus, .room-form textarea:focus { border-color: #6d8d78; }
+.room-form input::placeholder, .room-form textarea::placeholder { color: #9ba19b; }
+.room-form small { margin-top: 6px; color: var(--muted); font-size: 11px; }
+.password-hint { margin: 9px 0 4px; color: #69756d; font-size: 11px; line-height: 1.5; }
+.create-button { margin-top: 22px; }
+.form-status { min-height: 18px; margin: 10px 0 0; color: #8d4030; font-size: 12px; }
+.form-status.success { color: #2f7251; }
+.created-room { grid-column: 2; padding: 20px 22px; border-left: 3px solid #6b9b75; background: var(--green-soft); }
+.created-room[hidden] { display: none; }
+.created-label { display: block; color: #426d4e; font-size: 10px; font-weight: 700; }
+.created-room strong { display: block; margin-top: 8px; font: 700 22px var(--display); }
+.created-room p { color: #506355; font-size: 13px; }
+.created-room a { color: var(--green); font-size: 13px; font-weight: 700; text-decoration: none; }
+@media (max-width: 700px) {
+  .admin-topbar { min-height: 62px; }
+  .admin-main { grid-template-columns: 1fr; gap: 26px; width: min(540px, calc(100% - 32px)); padding: 38px 0 50px; }
+  .admin-intro h1 { margin: 12px 0 10px; font-size: 50px; }
+  .admin-intro p { margin: 0; }
+  .admin-form-wrap { padding: 22px 18px; }
+  .created-room { grid-column: 1; }
+}

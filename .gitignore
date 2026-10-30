@@ -218,3 +218,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# SimpleChat runtime data
+simplechat.db
+simplechat.db-*
+upload/*
+!upload/.gitkeep
+deploy/*.env
+!deploy/*.env.example
+simplechat.env

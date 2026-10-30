@@ -1,0 +1,19 @@
+{
+  "name": "Тихий чат",
+  "short_name": "Тихий чат",
+  "description": "Простой чат без лишних данных",
+  "lang": "ru",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f5ef",
+  "theme_color": "#183b32",
+  "icons": [
+    {
+      "src": "/img/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

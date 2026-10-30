@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#183b32">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/img/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <title>Администрирование · Тихий чат</title>
+</head>
+<body class="admin-page">
+  <header class="admin-topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark">т.</span>
+      <span class="brand-name">тихий<span>чат</span></span>
+    </a>
+    <a class="back-link" href="/">Вернуться в чат <span aria-hidden="true">↗</span></a>
+  </header>
+  <main class="admin-main">
+    <div class="admin-intro">
+      <span class="eyebrow">НАСТРОЙКИ ПРОСТРАНСТВА</span>
+      <h1>Новая<br>комната.</h1>
+      <p>Создайте место для разговора. Пароль можно не указывать.</p>
+    </div>
+    <section class="admin-form-wrap" aria-labelledby="form-title">
+      <div class="admin-form-heading">
+        <span class="form-number">01</span>
+        <h2 id="form-title">Параметры комнаты</h2>
+      </div>
+      <form id="room-form" class="room-form">
+        <label for="admin-token">Ключ администратора</label>
+        <input id="admin-token" name="admin-token" type="password" autocomplete="current-password" required>
+        <small>Задаётся владельцем сервера в переменной ADMIN_TOKEN.</small>
+        <label for="room-name">Название</label>
+        <input id="room-name" name="name" maxlength="80" placeholder="Например, Книжный клуб" required>
+        <label for="room-description">Описание <span>необязательно</span></label>
+        <textarea id="room-description" name="description" maxlength="240" rows="3" placeholder="О чём эта комната"></textarea>
+        <label for="room-password">Пароль <span>необязательно</span></label>
+        <input id="room-password" name="password" type="password" maxlength="128" autocomplete="new-password" placeholder="Оставьте пустым для открытого чата">
+        <p class="password-hint">Если задать пароль, участники увидят отметку «Закрыта» и подсказку о пароле при входе.</p>
+        <button class="send-button create-button" type="submit">Создать комнату <span aria-hidden="true">↗</span></button>
+        <p id="form-status" class="form-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+    <section class="created-room" id="created-room" hidden aria-live="polite">
+      <span class="created-label">КОМНАТА СОЗДАНА</span>
+      <strong id="created-name"></strong>
+      <p id="created-description"></p>
+      <a href="/">Открыть чат <span aria-hidden="true">↗</span></a>
+    </section>
+  </main>
+  <script src="/js/admin.js" defer></script>
+</body>
+</html>
