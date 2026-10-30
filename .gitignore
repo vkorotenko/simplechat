@@ -227,3 +227,4 @@ upload/*
 deploy/*.env
 !deploy/*.env.example
 simplechat.env
+settings.json
