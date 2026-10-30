@@ -35,4 +35,5 @@
   .admin-intro p { margin: 0; }
   .admin-form-wrap { padding: 22px 18px; }
   .created-room { grid-column: 1; }
+  .site-footer { width: min(540px, calc(100% - 32px)); }
 }

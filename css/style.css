@@ -43,6 +43,12 @@ button { color: inherit; }
 .quiet-button:hover { color: white; }
 .admin-link { display: flex; justify-content: space-between; padding: 14px 0 2px; border-top: 1px solid #426256; color: #dbe5dc; font-size: 12px; text-decoration: none; }
 .admin-link:hover { color: var(--lime); }
+.site-credit { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid #426256; color: #b7c8be; font-size: 10px; }
+.site-credit a { color: inherit; text-decoration: none; }
+.site-credit a:hover { color: var(--lime); }
+.site-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: min(1050px, calc(100% - 48px)); margin: 0 auto; padding: 0 0 28px; color: var(--muted); font-size: 12px; }
+.site-footer a { color: var(--green); text-decoration: none; }
+.site-footer a:hover { text-decoration: underline; }
 
 .chat-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 0; min-height: 100dvh; }
 .chat-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; min-height: 133px; padding: 30px clamp(22px, 5vw, 72px) 24px; border-bottom: 1px solid var(--line); background: var(--white); }
@@ -100,11 +106,12 @@ button { color: inherit; }
   .room-list { display: flex; overflow-x: auto; gap: 7px; padding: 0 0 5px; scrollbar-width: thin; }
   .room-item { flex: 0 0 155px; min-height: 52px; padding: 8px; background: rgb(255 255 255 / 5%); }
   .room-item-description { font-size: 11px; }
-  .sidebar-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 6px; }
+  .sidebar-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding-top: 6px; }
   .profile { flex: 1; min-width: 0; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 7px; padding: 6px 0 0; border-top: 0; }
   .avatar { width: 27px; height: 27px; font-size: 12px; }
   .admin-link { flex: 0 0 auto; gap: 6px; padding: 9px 0 2px; border-top: 0; font-size: 11px; }
-  .chat-panel { min-height: 0; height: calc(100dvh - 154px); }
+  .site-credit { flex: 0 0 100%; padding-top: 4px; border-top: 0; font-size: 9px; }
+  .chat-panel { min-height: 0; height: calc(100dvh - 174px); }
   .chat-header { min-height: 98px; padding: 18px 18px 14px; }
   .room-heading h1 { font-size: 22px; }
   .room-heading p { max-width: 58vw; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
@@ -116,7 +123,7 @@ button { color: inherit; }
   .composer textarea { min-height: 42px; }
 }
 @media (max-width: 390px) {
-  .chat-panel { height: calc(100dvh - 150px); }
+  .chat-panel { height: calc(100dvh - 174px); }
   .connection-status { font-size: 0; }
   .connection-status .status-dot { width: 9px; height: 9px; }
   .send-button { gap: 5px; padding: 0 8px; }
