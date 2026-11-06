@@ -37,6 +37,10 @@ class ChatApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201, response.text)
         room_id = response.json()["id"]
 
+        response = self.client.get(f"/c_{room_id}")
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertIn("<title>Тихий чат</title>", response.text)
+
         response = self.client.post(f"/api/rooms/{room_id}/join", json={"password": "wrong"})
         self.assertEqual(response.status_code, 403)
 

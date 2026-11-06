@@ -10,7 +10,12 @@ const messageInput = document.querySelector("#message-input");
 const imageInput = document.querySelector("#image-input");
 const attachmentName = document.querySelector("#attachment-name");
 const sendButton = messageForm.querySelector("button[type=submit]");
-const state = { user: null, room: null, roomToken: null, lastMessageId: 0, pollTimer: null };
+const state = { user: null, room: null, rooms: [], roomToken: null, lastMessageId: 0, pollTimer: null };
+
+function roomIdFromPath() {
+  const match = window.location.pathname.match(/^\/c_(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
 
 async function api(path, options = {}) {
   const response = await fetch(path, { credentials: "same-origin", ...options });
@@ -51,6 +56,7 @@ async function startSession() {
 async function loadRooms() {
   try {
     const rooms = await api("/api/rooms");
+    state.rooms = rooms;
     document.querySelector("#room-count").textContent = String(rooms.length).padStart(2, "0");
     roomList.replaceChildren();
     for (const room of rooms) {
@@ -81,12 +87,21 @@ async function loadRooms() {
       note.textContent = "Пока нет комнат";
       roomList.append(note);
     }
+    const roomId = roomIdFromPath();
+    if (roomId !== null) {
+      const room = rooms.find((item) => item.id === roomId);
+      if (room) {
+        await openRoom(room, false);
+      } else {
+        setStatus("Комната не найдена");
+      }
+    }
   } catch (error) {
     setStatus(error.message);
   }
 }
 
-async function openRoom(room) {
+async function openRoom(room, updateHistory = true) {
   let password = "";
   if (room.has_password) {
     password = window.prompt(`Комната «${room.name}» защищена паролем.`);
@@ -111,12 +126,46 @@ async function openRoom(room) {
     document.querySelectorAll(".room-item").forEach((item) => item.classList.toggle("active", Number(item.dataset.roomId) === room.id));
     messageInput.disabled = false;
     sendButton.disabled = false;
+    if (updateHistory && roomIdFromPath() !== room.id) {
+      window.history.pushState({ roomId: room.id }, "", `/c_${room.id}`);
+    }
     await refreshMessages();
     state.pollTimer = window.setInterval(refreshMessages, 2500);
   } catch (error) {
     window.alert(error.message);
   }
 }
+
+function clearRoom() {
+  state.room = null;
+  state.roomToken = null;
+  clearInterval(state.pollTimer);
+  state.pollTimer = null;
+  messageList.replaceChildren(emptyState);
+  emptyState.hidden = false;
+  document.querySelector("#room-title").textContent = "Выберите комнату";
+  document.querySelector("#room-description").textContent = "Сообщения появятся здесь.";
+  document.querySelector("#room-eyebrow").textContent = "ПРОСТРАНСТВО ДЛЯ РАЗГОВОРА";
+  document.querySelectorAll(".room-item").forEach((item) => item.classList.remove("active"));
+  messageInput.disabled = true;
+  sendButton.disabled = true;
+  setStatus("Не подключено");
+}
+
+window.addEventListener("popstate", () => {
+  const roomId = roomIdFromPath();
+  if (roomId === null) {
+    clearRoom();
+    return;
+  }
+  const room = state.rooms.find((item) => item.id === roomId);
+  if (room) {
+    openRoom(room, false);
+  } else {
+    clearRoom();
+    setStatus("Комната не найдена");
+  }
+});
 
 function appendMessage(message) {
   const article = document.createElement("article");

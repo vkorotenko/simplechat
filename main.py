@@ -161,6 +161,11 @@ def index():
     return FileResponse(BASE_DIR / "index.html")
 
 
+@app.get("/c_{room_id}")
+def room_page(room_id: int):
+    return FileResponse(BASE_DIR / "index.html")
+
+
 @app.get("/admin")
 def admin_page():
     return FileResponse(BASE_DIR / "admin.html")
