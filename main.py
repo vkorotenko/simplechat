@@ -228,15 +228,27 @@ def join_room(room_id: int, data: JoinRequest, db: Session = Depends(db_session)
 
 
 @app.get("/api/rooms/{room_id}/messages")
-def get_messages(room_id: int, after: int = 0, room_token: str = Header(alias="X-Room-Token"),
+def get_messages(room_id: int, after: int = 0, around: int | None = None,
+                 room_token: str = Header(alias="X-Room-Token"),
                  db: Session = Depends(db_session), user: User = Depends(authenticated_user)):
     if db.get(Room, room_id) is None:
         raise HTTPException(status_code=404, detail="Комната не найдена")
     check_room_token(room_token, user.id, room_id)
-    messages = db.scalars(
-        select(Message).where(Message.room_id == room_id, Message.id > after)
-        .order_by(Message.id.asc()).limit(100)
-    ).all()
+    if around is not None:
+        messages = db.scalars(
+            select(Message).where(Message.room_id == room_id, Message.id <= around)
+            .order_by(Message.id.desc()).limit(100)
+        ).all()[::-1]
+    elif after:
+        messages = db.scalars(
+            select(Message).where(Message.room_id == room_id, Message.id > after)
+            .order_by(Message.id.asc()).limit(100)
+        ).all()
+    else:
+        messages = db.scalars(
+            select(Message).where(Message.room_id == room_id)
+            .order_by(Message.id.desc()).limit(100)
+        ).all()[::-1]
     users = {item.id: item.login for item in db.scalars(select(User)).all()}
     return [{"id": item.id, "login": users.get(item.user_id, "?"), "content": item.content,
              "image_url": item.image_url, "created_at": item.created_at.isoformat()} for item in messages]

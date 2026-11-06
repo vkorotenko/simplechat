@@ -55,10 +55,27 @@ class ChatApiTests(unittest.TestCase):
             data={"content": "Hello from test"},
         )
         self.assertEqual(response.status_code, 201, response.text)
+        first_message_id = response.json()["id"]
+
+        response = self.client.post(
+            f"/api/rooms/{room_id}/messages",
+            headers=headers,
+            data={"content": "Second message"},
+        )
+        self.assertEqual(response.status_code, 201, response.text)
+        second_message_id = response.json()["id"]
 
         response = self.client.get(f"/api/rooms/{room_id}/messages", headers=headers)
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()[0]["content"], "Hello from test")
+        self.assertEqual([message["id"] for message in response.json()], [first_message_id, second_message_id])
+
+        response = self.client.get(
+            f"/api/rooms/{room_id}/messages?around={first_message_id}",
+            headers=headers,
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual([message["id"] for message in response.json()], [first_message_id])
 
     def test_russian_login_and_room_name(self):
         response = self.client.post("/api/login", json={"login": "Иван"})

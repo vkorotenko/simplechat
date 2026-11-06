@@ -10,7 +10,15 @@ const messageInput = document.querySelector("#message-input");
 const imageInput = document.querySelector("#image-input");
 const attachmentName = document.querySelector("#attachment-name");
 const sendButton = messageForm.querySelector("button[type=submit]");
-const state = { user: null, room: null, rooms: [], roomToken: null, lastMessageId: 0, pollTimer: null };
+const state = {
+  user: null,
+  room: null,
+  rooms: [],
+  roomToken: null,
+  lastMessageId: 0,
+  restoreMessageId: null,
+  pollTimer: null,
+};
 
 function roomIdFromPath() {
   const match = window.location.pathname.match(/^\/c_(\d+)$/);
@@ -39,6 +47,10 @@ function setStatus(text, online = false) {
 function showLogin() {
   if (!loginDialog.open) loginDialog.showModal();
   loginInput.focus();
+}
+
+function lastReadStorageKey(roomId) {
+  return `simplechat:last-read:${encodeURIComponent(state.user.login)}:${roomId}`;
 }
 
 async function startSession() {
@@ -116,6 +128,10 @@ async function openRoom(room, updateHistory = true) {
     state.room = room;
     state.roomToken = result.room_token;
     state.lastMessageId = 0;
+    const savedMessageId = Number(localStorage.getItem(lastReadStorageKey(room.id)));
+    state.restoreMessageId = Number.isSafeInteger(savedMessageId) && savedMessageId > 0
+      ? savedMessageId
+      : null;
     clearInterval(state.pollTimer);
     messageList.replaceChildren();
     messageList.append(emptyState);
@@ -170,6 +186,7 @@ window.addEventListener("popstate", () => {
 function appendMessage(message) {
   const article = document.createElement("article");
   article.className = "message";
+  article.dataset.messageId = String(message.id);
   const avatar = document.createElement("span");
   avatar.className = "message-avatar";
   avatar.textContent = message.login.slice(0, 1);
@@ -204,23 +221,55 @@ function appendMessage(message) {
 async function refreshMessages() {
   if (!state.room || !state.roomToken) return;
   try {
-    const messages = await api(`/api/rooms/${state.room.id}/messages?after=${state.lastMessageId}`, {
+    const initialLoad = state.lastMessageId === 0;
+    const query = initialLoad
+      ? state.restoreMessageId === null ? "" : `?around=${state.restoreMessageId}`
+      : `?after=${state.lastMessageId}`;
+    let messages = await api(`/api/rooms/${state.room.id}/messages${query}`, {
       headers: { "X-Room-Token": state.roomToken },
     });
+    if (initialLoad && state.restoreMessageId !== null && !messages.length) {
+      state.restoreMessageId = null;
+      messages = await api(`/api/rooms/${state.room.id}/messages`, {
+        headers: { "X-Room-Token": state.roomToken },
+      });
+    }
     if (messages.length) {
-      const shouldScroll = messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight < 120;
+      const shouldScroll = !initialLoad
+        && messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight < 120;
       emptyState.hidden = true;
       for (const message of messages) {
         appendMessage(message);
         state.lastMessageId = message.id;
       }
-      if (shouldScroll) messageList.scrollTop = messageList.scrollHeight;
+      if (initialLoad && state.restoreMessageId !== null) {
+        const target = messageList.querySelector(`[data-message-id="${state.restoreMessageId}"]`);
+        if (target) {
+          messageList.scrollTop += target.getBoundingClientRect().top - messageList.getBoundingClientRect().top;
+        }
+      } else if (shouldScroll || initialLoad) {
+        messageList.scrollTop = messageList.scrollHeight;
+      }
     }
     setStatus("На связи", true);
   } catch (error) {
     setStatus(error.message);
   }
 }
+
+messageList.addEventListener("scroll", () => {
+  if (!state.room || !state.user) return;
+  const bounds = messageList.getBoundingClientRect();
+  const visibleMessages = [...messageList.querySelectorAll(".message[data-message-id]")]
+    .filter((message) => {
+      const messageBounds = message.getBoundingClientRect();
+      return messageBounds.bottom > bounds.top && messageBounds.top < bounds.bottom;
+    });
+  if (visibleMessages.length) {
+    const lastVisibleMessage = visibleMessages[visibleMessages.length - 1];
+    localStorage.setItem(lastReadStorageKey(state.room.id), lastVisibleMessage.dataset.messageId);
+  }
+}, { passive: true });
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
