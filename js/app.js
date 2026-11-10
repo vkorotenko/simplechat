@@ -5,18 +5,21 @@ const loginError = document.querySelector("#login-error");
 const roomList = document.querySelector("#room-list");
 const messageList = document.querySelector("#message-list");
 const emptyState = document.querySelector("#empty-state");
+const loadOlderButton = document.querySelector("#load-older-button");
 const messageForm = document.querySelector("#message-form");
 const messageInput = document.querySelector("#message-input");
 const imageInput = document.querySelector("#image-input");
 const attachmentName = document.querySelector("#attachment-name");
 const sendButton = messageForm.querySelector("button[type=submit]");
+const MESSAGE_PAGE_SIZE = 50;
 const state = {
   user: null,
   room: null,
   rooms: [],
   roomToken: null,
   lastMessageId: 0,
-  restoreMessageId: null,
+  hasOlderMessages: false,
+  loadingOlderMessages: false,
   pollTimer: null,
 };
 
@@ -47,10 +50,6 @@ function setStatus(text, online = false) {
 function showLogin() {
   if (!loginDialog.open) loginDialog.showModal();
   loginInput.focus();
-}
-
-function lastReadStorageKey(roomId) {
-  return `simplechat:last-read:${encodeURIComponent(state.user.login)}:${roomId}`;
 }
 
 async function startSession() {
@@ -128,13 +127,13 @@ async function openRoom(room, updateHistory = true) {
     state.room = room;
     state.roomToken = result.room_token;
     state.lastMessageId = 0;
-    const savedMessageId = Number(localStorage.getItem(lastReadStorageKey(room.id)));
-    state.restoreMessageId = Number.isSafeInteger(savedMessageId) && savedMessageId > 0
-      ? savedMessageId
-      : null;
+    state.hasOlderMessages = false;
+    state.loadingOlderMessages = false;
     clearInterval(state.pollTimer);
     messageList.replaceChildren();
-    messageList.append(emptyState);
+    messageList.append(loadOlderButton, emptyState);
+    loadOlderButton.hidden = true;
+    loadOlderButton.disabled = false;
     emptyState.hidden = false;
     document.querySelector("#room-title").textContent = room.name;
     document.querySelector("#room-description").textContent = room.description || "Без описания";
@@ -146,6 +145,7 @@ async function openRoom(room, updateHistory = true) {
       window.history.pushState({ roomId: room.id }, "", `/c_${room.id}`);
     }
     await refreshMessages();
+    messageInput.focus();
     state.pollTimer = window.setInterval(refreshMessages, 2500);
   } catch (error) {
     window.alert(error.message);
@@ -157,7 +157,10 @@ function clearRoom() {
   state.roomToken = null;
   clearInterval(state.pollTimer);
   state.pollTimer = null;
-  messageList.replaceChildren(emptyState);
+  state.hasOlderMessages = false;
+  state.loadingOlderMessages = false;
+  messageList.replaceChildren(loadOlderButton, emptyState);
+  loadOlderButton.hidden = true;
   emptyState.hidden = false;
   document.querySelector("#room-title").textContent = "Выберите комнату";
   document.querySelector("#room-description").textContent = "Сообщения появятся здесь.";
@@ -183,7 +186,7 @@ window.addEventListener("popstate", () => {
   }
 });
 
-function appendMessage(message) {
+function createMessage(message) {
   const article = document.createElement("article");
   article.className = "message";
   article.dataset.messageId = String(message.id);
@@ -215,39 +218,31 @@ function appendMessage(message) {
     image.loading = "lazy";
     article.append(image);
   }
-  messageList.append(article);
+  return article;
 }
 
 async function refreshMessages() {
   if (!state.room || !state.roomToken) return;
   try {
     const initialLoad = state.lastMessageId === 0;
-    const query = initialLoad
-      ? state.restoreMessageId === null ? "" : `?around=${state.restoreMessageId}`
-      : `?after=${state.lastMessageId}`;
+    const query = initialLoad ? "" : `?after=${state.lastMessageId}`;
     let messages = await api(`/api/rooms/${state.room.id}/messages${query}`, {
       headers: { "X-Room-Token": state.roomToken },
     });
-    if (initialLoad && state.restoreMessageId !== null && !messages.length) {
-      state.restoreMessageId = null;
-      messages = await api(`/api/rooms/${state.room.id}/messages`, {
-        headers: { "X-Room-Token": state.roomToken },
-      });
+    if (initialLoad) {
+      state.hasOlderMessages = messages.length > MESSAGE_PAGE_SIZE;
+      if (state.hasOlderMessages) messages = messages.slice(-MESSAGE_PAGE_SIZE);
+      loadOlderButton.hidden = !state.hasOlderMessages;
     }
     if (messages.length) {
       const shouldScroll = !initialLoad
         && messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight < 120;
       emptyState.hidden = true;
       for (const message of messages) {
-        appendMessage(message);
+        messageList.append(createMessage(message));
         state.lastMessageId = message.id;
       }
-      if (initialLoad && state.restoreMessageId !== null) {
-        const target = messageList.querySelector(`[data-message-id="${state.restoreMessageId}"]`);
-        if (target) {
-          messageList.scrollTop += target.getBoundingClientRect().top - messageList.getBoundingClientRect().top;
-        }
-      } else if (shouldScroll || initialLoad) {
+      if (shouldScroll || initialLoad) {
         messageList.scrollTop = messageList.scrollHeight;
       }
     }
@@ -257,19 +252,34 @@ async function refreshMessages() {
   }
 }
 
-messageList.addEventListener("scroll", () => {
-  if (!state.room || !state.user) return;
-  const bounds = messageList.getBoundingClientRect();
-  const visibleMessages = [...messageList.querySelectorAll(".message[data-message-id]")]
-    .filter((message) => {
-      const messageBounds = message.getBoundingClientRect();
-      return messageBounds.bottom > bounds.top && messageBounds.top < bounds.bottom;
+loadOlderButton.addEventListener("click", async () => {
+  if (!state.room || !state.roomToken || !state.hasOlderMessages || state.loadingOlderMessages) return;
+  const firstMessage = messageList.querySelector(".message[data-message-id]");
+  if (!firstMessage) return;
+  const firstMessageId = Number(firstMessage.dataset.messageId);
+  const previousTop = firstMessage.getBoundingClientRect().top;
+  state.loadingOlderMessages = true;
+  loadOlderButton.disabled = true;
+  try {
+    const messages = await api(`/api/rooms/${state.room.id}/messages?before=${firstMessageId}`, {
+      headers: { "X-Room-Token": state.roomToken },
     });
-  if (visibleMessages.length) {
-    const lastVisibleMessage = visibleMessages[visibleMessages.length - 1];
-    localStorage.setItem(lastReadStorageKey(state.room.id), lastVisibleMessage.dataset.messageId);
+    state.hasOlderMessages = messages.length > MESSAGE_PAGE_SIZE;
+    const olderMessages = state.hasOlderMessages ? messages.slice(-MESSAGE_PAGE_SIZE) : messages;
+    for (const message of olderMessages) {
+      messageList.insertBefore(createMessage(message), firstMessage);
+    }
+    loadOlderButton.hidden = !state.hasOlderMessages;
+    if (olderMessages.length) {
+      messageList.scrollTop += firstMessage.getBoundingClientRect().top - previousTop;
+    }
+  } catch (error) {
+    setStatus(error.message);
+  } finally {
+    state.loadingOlderMessages = false;
+    loadOlderButton.disabled = false;
   }
-}, { passive: true });
+});
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -313,6 +323,7 @@ messageForm.addEventListener("submit", async (event) => {
     attachmentName.hidden = true;
     await refreshMessages();
     messageList.scrollTop = messageList.scrollHeight;
+    messageInput.focus();
   } catch (error) {
     window.alert(error.message);
   } finally {

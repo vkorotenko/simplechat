@@ -71,6 +71,33 @@ class ChatApiTests(unittest.TestCase):
         self.assertEqual([message["id"] for message in response.json()], [first_message_id, second_message_id])
 
         response = self.client.get(
+            f"/api/rooms/{room_id}/messages?before={second_message_id}",
+            headers=headers,
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual([message["id"] for message in response.json()], [first_message_id])
+
+        for index in range(51):
+            response = self.client.post(
+                f"/api/rooms/{room_id}/messages",
+                headers=headers,
+                data={"content": f"Message {index}"},
+            )
+            self.assertEqual(response.status_code, 201, response.text)
+
+        response = self.client.get(f"/api/rooms/{room_id}/messages", headers=headers)
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(len(response.json()), 51)
+        self.assertEqual(response.json()[0]["id"], second_message_id + 1)
+
+        response = self.client.get(
+            f"/api/rooms/{room_id}/messages?before={second_message_id + 1}",
+            headers=headers,
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual([message["id"] for message in response.json()], [first_message_id, second_message_id])
+
+        response = self.client.get(
             f"/api/rooms/{room_id}/messages?around={first_message_id}",
             headers=headers,
         )

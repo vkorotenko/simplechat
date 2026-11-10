@@ -22,6 +22,7 @@ for directory in (BASE_DIR / "css", BASE_DIR / "js", BASE_DIR / "img", UPLOAD_DI
     directory.mkdir(exist_ok=True)
 SESSION_SECRET = (os.getenv("SESSION_SECRET") or secrets.token_hex(32)).encode()
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
+MESSAGE_PAGE_SIZE = 50
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./simplechat.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
@@ -228,7 +229,7 @@ def join_room(room_id: int, data: JoinRequest, db: Session = Depends(db_session)
 
 
 @app.get("/api/rooms/{room_id}/messages")
-def get_messages(room_id: int, after: int = 0, around: int | None = None,
+def get_messages(room_id: int, after: int = 0, before: int | None = None, around: int | None = None,
                  room_token: str = Header(alias="X-Room-Token"),
                  db: Session = Depends(db_session), user: User = Depends(authenticated_user)):
     if db.get(Room, room_id) is None:
@@ -239,6 +240,11 @@ def get_messages(room_id: int, after: int = 0, around: int | None = None,
             select(Message).where(Message.room_id == room_id, Message.id <= around)
             .order_by(Message.id.desc()).limit(100)
         ).all()[::-1]
+    elif before is not None:
+        messages = db.scalars(
+            select(Message).where(Message.room_id == room_id, Message.id < before)
+            .order_by(Message.id.desc()).limit(MESSAGE_PAGE_SIZE + 1)
+        ).all()[::-1]
     elif after:
         messages = db.scalars(
             select(Message).where(Message.room_id == room_id, Message.id > after)
@@ -247,7 +253,7 @@ def get_messages(room_id: int, after: int = 0, around: int | None = None,
     else:
         messages = db.scalars(
             select(Message).where(Message.room_id == room_id)
-            .order_by(Message.id.desc()).limit(100)
+            .order_by(Message.id.desc()).limit(MESSAGE_PAGE_SIZE + 1)
         ).all()[::-1]
     users = {item.id: item.login for item in db.scalars(select(User)).all()}
     return [{"id": item.id, "login": users.get(item.user_id, "?"), "content": item.content,
