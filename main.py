@@ -157,6 +157,16 @@ def require_admin(token: str | None) -> None:
         raise HTTPException(status_code=403, detail="Недействительный ключ администратора")
 
 
+def remove_uploaded_image(image_url: str | None) -> None:
+    if not image_url or not image_url.startswith("/upload/"):
+        return
+    filename = Path(image_url.removeprefix("/upload/")).name
+    if filename:
+        image_path = UPLOAD_DIR / filename
+        if image_path.is_file():
+            image_path.unlink()
+
+
 @app.get("/")
 def index():
     return FileResponse(BASE_DIR / "index.html")
@@ -305,3 +315,53 @@ def create_room(data: RoomRequest, x_admin_token: str | None = Header(default=No
     db.refresh(room)
     return {"id": room.id, "name": room.name, "description": room.description,
             "has_password": room.password_hash is not None}
+
+
+@app.get("/api/admin/rooms")
+def list_admin_rooms(x_admin_token: str | None = Header(default=None), db: Session = Depends(db_session)):
+    require_admin(x_admin_token)
+    rooms = db.scalars(select(Room).order_by(Room.id.desc())).all()
+    return [{"id": room.id, "name": room.name, "description": room.description,
+             "has_password": room.password_hash is not None} for room in rooms]
+
+
+@app.delete("/api/admin/rooms/{room_id}", status_code=204)
+def delete_room(room_id: int, x_admin_token: str | None = Header(default=None), db: Session = Depends(db_session)):
+    require_admin(x_admin_token)
+    room = db.get(Room, room_id)
+    if room is None:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+
+    messages = db.scalars(select(Message).where(Message.room_id == room_id)).all()
+    for message in messages:
+        remove_uploaded_image(message.image_url)
+        db.delete(message)
+    db.delete(room)
+    db.commit()
+    return Response(status_code=204)
+
+
+@app.delete("/api/admin/rooms/{room_id}/messages/{message_id}", status_code=204)
+def delete_room_message(room_id: int, message_id: int, x_admin_token: str | None = Header(default=None),
+                        db: Session = Depends(db_session)):
+    require_admin(x_admin_token)
+    message = db.get(Message, message_id)
+    if message is None or message.room_id != room_id:
+        raise HTTPException(status_code=404, detail="Сообщение не найдено")
+    remove_uploaded_image(message.image_url)
+    db.delete(message)
+    db.commit()
+    return Response(status_code=204)
+
+
+@app.delete("/api/admin/messages/{message_id}", status_code=204)
+def delete_message(message_id: int, x_admin_token: str | None = Header(default=None),
+                   db: Session = Depends(db_session)):
+    require_admin(x_admin_token)
+    message = db.get(Message, message_id)
+    if message is None:
+        raise HTTPException(status_code=404, detail="Сообщение не найдено")
+    remove_uploaded_image(message.image_url)
+    db.delete(message)
+    db.commit()
+    return Response(status_code=204)

@@ -28,6 +28,15 @@
 .created-room strong { display: block; margin-top: 8px; font: 700 22px var(--display); }
 .created-room p { color: #506355; font-size: 13px; }
 .created-room a { color: var(--green); font-size: 13px; font-weight: 700; text-decoration: none; }
+.room-manager { grid-column: 1 / -1; padding-top: 8px; }
+.room-manager-list { display: grid; gap: 8px; }
+.room-manager-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 14px 16px; border: 1px solid var(--line); background: var(--white); }
+.room-manager-name { display: block; font: 700 17px var(--display); }
+.room-manager-description { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+.delete-room-button { min-height: 38px; padding: 8px 12px; border: 1px solid #a95c4c; border-radius: 2px; background: transparent; color: #8d4030; cursor: pointer; font-weight: 700; }
+.delete-room-button:hover { background: #f5e9e4; }
+.delete-room-button:disabled { cursor: wait; opacity: .55; }
+.room-manager-empty { margin: 0; color: var(--muted); font-size: 13px; }
 @media (max-width: 700px) {
   .admin-topbar { min-height: 62px; }
   .admin-main { grid-template-columns: 1fr; gap: 26px; width: min(540px, calc(100% - 32px)); padding: 38px 0 50px; }

@@ -117,6 +117,58 @@ class ChatApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201, response.text)
         self.assertEqual(response.json()["name"], "Книжный клуб")
 
+    def test_admin_delete_room_and_message(self):
+        response = self.client.post("/api/login", json={"login": "admin_tester"})
+        self.assertEqual(response.status_code, 200, response.text)
+
+        response = self.client.post(
+            "/api/admin/rooms",
+            headers={"X-Admin-Token": "test-admin-token"},
+            json={"name": "Room to delete"},
+        )
+        room_id = response.json()["id"]
+
+        response = self.client.post(f"/api/rooms/{room_id}/join", json={})
+        room_token = response.json()["room_token"]
+
+        response = self.client.post(
+            f"/api/rooms/{room_id}/messages",
+            headers={"X-Room-Token": room_token},
+            data={"content": "Delete me"},
+        )
+        message_id = response.json()["id"]
+
+        response = self.client.delete(
+            f"/api/admin/rooms/{room_id}/messages/{message_id}",
+            headers={"X-Admin-Token": "wrong-token"},
+        )
+        self.assertEqual(response.status_code, 403)
+
+        response = self.client.delete(
+            f"/api/admin/rooms/{room_id}/messages/{message_id}",
+            headers={"X-Admin-Token": "test-admin-token"},
+        )
+        self.assertEqual(response.status_code, 204)
+
+        response = self.client.get(
+            f"/api/rooms/{room_id}/messages",
+            headers={"X-Room-Token": room_token},
+        )
+        self.assertEqual(response.json(), [])
+
+        response = self.client.delete(
+            f"/api/admin/rooms/{room_id}",
+            headers={"X-Admin-Token": "test-admin-token"},
+        )
+        self.assertEqual(response.status_code, 204)
+
+        response = self.client.get(
+            "/api/admin/rooms",
+            headers={"X-Admin-Token": "test-admin-token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(room_id, [room["id"] for room in response.json()])
+
 
 if __name__ == "__main__":
     unittest.main()
