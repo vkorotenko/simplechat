@@ -325,6 +325,20 @@ def list_admin_rooms(x_admin_token: str | None = Header(default=None), db: Sessi
              "has_password": room.password_hash is not None} for room in rooms]
 
 
+@app.get("/api/admin/rooms/{room_id}/messages")
+def list_admin_room_messages(room_id: int, x_admin_token: str | None = Header(default=None),
+                             db: Session = Depends(db_session)):
+    require_admin(x_admin_token)
+    if db.get(Room, room_id) is None:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+    messages = db.scalars(
+        select(Message).where(Message.room_id == room_id).order_by(Message.id.asc())
+    ).all()
+    users = {item.id: item.login for item in db.scalars(select(User)).all()}
+    return [{"id": item.id, "login": users.get(item.user_id, "?"), "content": item.content,
+             "image_url": item.image_url, "created_at": item.created_at.isoformat()} for item in messages]
+
+
 @app.delete("/api/admin/rooms/{room_id}", status_code=204)
 def delete_room(room_id: int, x_admin_token: str | None = Header(default=None), db: Session = Depends(db_session)):
     require_admin(x_admin_token)

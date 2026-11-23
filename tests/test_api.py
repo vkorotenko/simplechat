@@ -138,6 +138,13 @@ class ChatApiTests(unittest.TestCase):
         )
         message_id = response.json()["id"]
 
+        response = self.client.get(
+            f"/api/admin/rooms/{room_id}/messages",
+            headers={"X-Admin-Token": "test-admin-token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([message["id"] for message in response.json()], [message_id])
+
         response = self.client.delete(
             f"/api/admin/rooms/{room_id}/messages/{message_id}",
             headers={"X-Admin-Token": "wrong-token"},
