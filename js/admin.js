@@ -5,7 +5,9 @@ const createdRoom = document.querySelector("#created-room");
 const roomsStatus = document.querySelector("#rooms-status");
 const roomManagerList = document.querySelector("#room-manager-list");
 
-tokenInput.value = sessionStorage.getItem("simplechat-admin-token") || "";
+tokenInput.value = localStorage.getItem("simplechat-admin-token")
+  || sessionStorage.getItem("simplechat-admin-token")
+  || "";
 
 async function loadRooms() {
   const token = tokenInput.value;
@@ -61,9 +63,9 @@ async function loadRooms() {
             const result = await deleteResponse.json();
             throw new Error(typeof result.detail === "string" ? result.detail : "Не удалось удалить комнату");
           }
+          await loadRooms();
           roomsStatus.textContent = `Комната «${room.name}» удалена.`;
           roomsStatus.classList.add("success");
-          await loadRooms();
         } catch (error) {
           roomsStatus.textContent = error.message;
           remove.disabled = false;
@@ -82,11 +84,27 @@ async function loadRooms() {
         loading.className = "room-manager-empty";
         loading.textContent = "Загрузка сообщений...";
         messagesPanel.append(loading);
-        const response = await fetch(`/api/admin/rooms/${room.id}/messages`, {
-          headers: { "X-Admin-Token": token },
-        });
-        const messages = await response.json();
-        if (!response.ok) throw new Error(typeof messages.detail === "string" ? messages.detail : "Не удалось загрузить сообщения");
+        let response;
+        try {
+          response = await fetch(`/api/admin/rooms/${room.id}/messages`, {
+            headers: { "X-Admin-Token": token },
+          });
+        } catch (error) {
+          throw new Error("Не удалось связаться с сервером");
+        }
+        let messages;
+        try {
+          messages = await response.json();
+        } catch (error) {
+          messages = null;
+        }
+        if (!response.ok) {
+          if (response.status === 404) {
+            await loadRooms();
+            throw new Error("Комната была удалена или больше не существует.");
+          }
+          throw new Error(typeof messages?.detail === "string" ? messages.detail : "Не удалось загрузить сообщения");
+        }
         messagesPanel.replaceChildren();
         if (!messages.length) {
           const empty = document.createElement("p");
@@ -145,7 +163,13 @@ async function loadRooms() {
         try {
           await loadMessages();
         } catch (error) {
+          messagesPanel.replaceChildren();
+          const errorMessage = document.createElement("p");
+          errorMessage.className = "room-manager-empty";
+          errorMessage.textContent = error.message;
+          messagesPanel.append(errorMessage);
           roomsStatus.textContent = error.message;
+          roomsStatus.classList.remove("success");
         }
       });
 
@@ -158,6 +182,7 @@ async function loadRooms() {
 }
 
 tokenInput.addEventListener("change", () => {
+  localStorage.setItem("simplechat-admin-token", tokenInput.value);
   loadRooms();
 });
 
@@ -183,6 +208,7 @@ form.addEventListener("submit", async (event) => {
     });
     const result = await response.json();
     if (!response.ok) throw new Error(typeof result.detail === "string" ? result.detail : "Не удалось создать комнату");
+    localStorage.setItem("simplechat-admin-token", token);
     sessionStorage.setItem("simplechat-admin-token", token);
     document.querySelector("#created-name").textContent = result.name;
     document.querySelector("#created-description").textContent = result.description || "Без описания";

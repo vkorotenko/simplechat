@@ -14,6 +14,9 @@ const sendButton = messageForm.querySelector("button[type=submit]");
 const MESSAGE_PAGE_SIZE = 50;
 const state = {
   user: null,
+  adminToken: localStorage.getItem("simplechat-admin-token")
+    || sessionStorage.getItem("simplechat-admin-token")
+    || null,
   room: null,
   rooms: [],
   roomToken: null,
@@ -54,7 +57,8 @@ function showLogin() {
 
 async function startSession() {
   try {
-    state.user = await api("/api/me");
+    const headers = state.adminToken ? { "X-Admin-Token": state.adminToken } : {};
+    state.user = await api("/api/me", { headers });
     document.querySelector("#profile").hidden = false;
     document.querySelector("#profile-name").textContent = state.user.login;
     document.querySelector("#avatar").textContent = state.user.login.slice(0, 1);
@@ -204,6 +208,31 @@ function createMessage(message) {
   time.textContent = new Intl.DateTimeFormat("ru", { hour: "2-digit", minute: "2-digit" }).format(new Date(message.created_at));
   meta.append(author, time);
   article.append(avatar, meta);
+  if (state.user?.is_admin && state.adminToken) {
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "delete-message-inline";
+    deleteButton.textContent = "Удалить";
+    deleteButton.setAttribute("aria-label", `Удалить сообщение автора ${message.login}`);
+    deleteButton.addEventListener("click", async () => {
+      if (!window.confirm(`Удалить сообщение автора «${message.login}»?`)) return;
+      deleteButton.disabled = true;
+      try {
+        await api(`/api/admin/messages/${message.id}`, {
+          method: "DELETE",
+          headers: { "X-Admin-Token": state.adminToken },
+        });
+        article.remove();
+        if (!messageList.querySelector(".message")) {
+          emptyState.hidden = false;
+        }
+      } catch (error) {
+        window.alert(error.message);
+        deleteButton.disabled = false;
+      }
+    });
+    meta.append(deleteButton);
+  }
   if (message.content) {
     const content = document.createElement("p");
     content.className = "message-content";

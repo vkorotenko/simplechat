@@ -193,8 +193,14 @@ def service_worker():
 
 
 @app.get("/api/me")
-def who_am_i(user: User = Depends(authenticated_user)):
-    return {"login": user.login}
+def who_am_i(user: User = Depends(authenticated_user),
+             x_admin_token: str | None = Header(default=None)):
+    is_admin = bool(
+        ADMIN_TOKEN
+        and x_admin_token
+        and hmac.compare_digest(x_admin_token, ADMIN_TOKEN)
+    )
+    return {"login": user.login, "is_admin": is_admin}
 
 
 @app.post("/api/login")

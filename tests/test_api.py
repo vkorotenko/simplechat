@@ -121,6 +121,20 @@ class ChatApiTests(unittest.TestCase):
         response = self.client.post("/api/login", json={"login": "admin_tester"})
         self.assertEqual(response.status_code, 200, response.text)
 
+        response = self.client.get(
+            "/api/me",
+            headers={"X-Admin-Token": "test-admin-token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["is_admin"])
+
+        response = self.client.get(
+            "/api/me",
+            headers={"X-Admin-Token": "wrong-token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()["is_admin"])
+
         response = self.client.post(
             "/api/admin/rooms",
             headers={"X-Admin-Token": "test-admin-token"},
